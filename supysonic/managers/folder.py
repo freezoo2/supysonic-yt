@@ -48,7 +48,7 @@ class FolderManager:
         if Folder.select().where(Folder.path.startswith(path)).exists():
             raise ValueError("This path contains a folder that is already registered")
 
-        folder = Folder.create(root=True, name=name, path=path)
+        folder = Folder.create(id=1, root=True, name=name, path=path)
         try:
             DaemonClient().add_watched_folder(path)
         except DaemonUnavailableError:

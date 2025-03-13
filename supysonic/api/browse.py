@@ -15,6 +15,9 @@ from ..db import Folder, Artist, Album, Track
 
 from . import get_entity, get_root_folder, api_routing
 
+from ..ytmusic import YTM
+
+
 
 @api_routing("/getMusicFolders")
 def list_folders():
@@ -148,6 +151,28 @@ def list_genres():
         },
     )
 
+@api_routing("/getArtistInfo")
+def get_artist_info():
+    artist_id = request.values['id']
+    ytm = YTM()
+    info = ytm.get_artist_info(artist_id)
+    return request.formatter("artistInfo", info)
+
+
+@api_routing("/getArtistInfo2")
+def get_artist_info2():
+    artist_id = request.values['id']
+    ytm = YTM()
+    info = ytm.get_artist_info(artist_id)
+    return request.formatter("artistInfo2", info)
+
+@api_routing("/getTopSongs")
+def get_top_songs():
+    artist_name = request.values['artist']
+    ytm = YTM()
+    info = ytm.get_top_songs(artist_name)
+    return request.formatter("topSongs", info)
+
 
 @api_routing("/getArtists")
 def list_artists():
@@ -176,36 +201,66 @@ def list_artists():
         },
     )
 
-
 @api_routing("/getArtist")
 def artist_info():
-    res = get_entity(Artist)
-    info = res.as_subsonic_artist(request.user)
-    albums = set(res.albums)
-    albums |= {t.album for t in res.tracks}
-    info["album"] = [
-        a.as_subsonic_album(request.user)
-        for a in sorted(albums, key=lambda a: a.sort_key())
-    ]
-
+    # Need to always query from external provider otherwise we return incomplete albums
+    artist_id = request.values['id']
+    ytm = YTM()
+    info = ytm.get_artist(artist_id)
     return request.formatter("artist", info)
+
+# @api_routing("/getArtist")
+# def artist_info():
+#     res = get_entity(Artist)
+#     info = res.as_subsonic_artist(request.user)
+#     albums = set(res.albums)
+#     albums |= {t.album for t in res.tracks}
+#     info["album"] = [
+#         a.as_subsonic_album(request.user)
+#         for a in sorted(albums, key=lambda a: a.sort_key())
+#     ]
+#
+#     return request.formatter("artist", info)
 
 
 @api_routing("/getAlbum")
 def album_info():
-    res = get_entity(Album)
-    info = res.as_subsonic_album(request.user)
-    info["song"] = [
-        t.as_subsonic_child(request.user, request.client)
-        for t in sorted(res.tracks, key=lambda t: t.sort_key())
-    ]
-
+    # Need to always query from external provider otherwise we return incomplete albums
+    album_id = request.values['id']
+    ytm = YTM()
+    info = ytm.get_album(album_id)
     return request.formatter("album", info)
+
+# @api_routing("/getAlbum")
+# def album_info():
+#     try:
+#         res = get_entity(Album)
+#         info = res.as_subsonic_album(request.user)
+#         info["song"] = [
+#             t.as_subsonic_child(request.user, request.client)
+#             for t in sorted(res.tracks, key=lambda t: t.sort_key())
+#         ]
+#     except:
+#         album_id = request.values['id']
+#         info = ytm.get_album(album_id)
+#     return request.formatter("album", info)
 
 
 @api_routing("/getSong")
 def track_info():
-    res = get_entity(Track)
-    return request.formatter(
-        "song", res.as_subsonic_child(request.user, request.client)
-    )
+    try:
+        res = get_entity(Track)
+        if res:
+            return request.formatter(
+                "song", res.as_subsonic_child(request.user, request.client)
+            )
+    except:
+        pass
+    track_id = request.values['id']
+    ytm = YTM()
+    track_info = ytm.get_song_detail(track_id)
+    return request.formatter("song", track_info)
+
+
+
+

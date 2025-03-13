@@ -75,7 +75,7 @@ def create_playlist():
         raise MissingParameter("playlistId or name")
 
     for sid in songs:
-        sid = uuid.UUID(sid)
+        # sid = uuid.UUID(sid)
         track = Track[sid]
         playlist.add(track)
     playlist.save()
@@ -112,8 +112,8 @@ def update_playlist():
     if public:
         playlist.public = public in (True, "True", "true", 1, "1")
 
-    to_add = map(uuid.UUID, to_add)
-    to_remove = map(int, to_remove)
+    # to_add = map(uuid.UUID, to_add)
+    # to_remove = map(int, to_remove)
 
     for sid in to_add:
         track = Track[sid]

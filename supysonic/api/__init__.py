@@ -102,8 +102,8 @@ def get_entity(cls, param="id"):
     eid = request.values[param]
     if cls == Folder:
         eid = int(eid)
-    else:
-        eid = uuid.UUID(eid)
+    # else:
+        # eid = uuid.UUID(eid)
     return cls[eid]
 
 
@@ -113,7 +113,7 @@ def get_entity_id(cls, eid):
         if isinstance(eid, uuid.UUID):
             raise GenericError("Invalid ID")
         try:
-            return int(eid)
+            return str(eid)
         except ValueError as e:
             raise GenericError("Invalid ID") from e
     try:

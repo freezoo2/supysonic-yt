@@ -84,7 +84,8 @@ class PathMixin:
 
 
 class Folder(PathMixin, _Model):
-    id = AutoField()
+    # id = AutoField()
+    id = CharField(primary_key=True, default=now)
     root = BooleanField()
     name = CharField()
     path = CharField(4096)  # unique
@@ -215,7 +216,8 @@ class Folder(PathMixin, _Model):
 
 
 class Artist(_Model):
-    id = PrimaryKeyField()
+    # id = PrimaryKeyField()
+    id = CharField(primary_key=True)
     name = CharField()
 
     def as_subsonic_artist(self, user):
@@ -255,7 +257,8 @@ class Artist(_Model):
 
 
 class Album(_Model):
-    id = PrimaryKeyField()
+    # id = PrimaryKeyField()
+    id = CharField(primary_key=True)
     name = CharField()
     artist = ForeignKeyField(Artist, backref="albums")
 
@@ -317,7 +320,8 @@ class Album(_Model):
 
 
 class Track(PathMixin, _Model):
-    id = PrimaryKeyField()
+    # id = PrimaryKeyField()
+    id = CharField(primary_key=True)
     disc = IntegerField()
     number = IntegerField()
     title = CharField()
@@ -565,7 +569,8 @@ class Playlist(_Model):
 
         for t in self.tracks.split(","):
             try:
-                tid = UUID(t)
+                # tid = UUID(t)
+                tid = t
                 track = Track[tid]
                 tracks.append(track)
             except (ValueError, Track.DoesNotExist):

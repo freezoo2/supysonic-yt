@@ -1,0 +1,6 @@
+yt-dlp
+ytmusicapi
+mutagen
+gunicorn
+opencv-python
+readable-number

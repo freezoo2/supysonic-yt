@@ -99,6 +99,7 @@ def find_first_available_server():
 @option(
     "--threads",
     type=int,
+    default=20,
     help="Number of threads used to process application logic. May not be supported by all servers",
 )
 def main(server, host, port, socket, processes, threads):

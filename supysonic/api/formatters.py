@@ -100,26 +100,29 @@ class XMLFormatter(BaseFormatter):
           ex. {"subsonic-response": { "musicFolders": {"musicFolder": [{ "id": 0,"name": "Music"}]},
           "status": "ok","version": "1.7.0","xmlns": "http://subsonic.org/restapi"}}
         """
-        if not isinstance(dictionary, dict):
-            raise TypeError("Expecting a dict")
-        if not all(isinstance(x, str) for x in dictionary):
-            raise TypeError("Dictionary keys must be strings")
+        try:
+            if not isinstance(dictionary, dict):
+                raise TypeError("Expecting a dict")
+            if not all(isinstance(x, str) for x in dictionary):
+                raise TypeError("Dictionary keys must be strings")
 
-        for name, value in dictionary.items():
-            if name == "value":
-                elem.text = self.__value_tostring(value)
-            elif isinstance(value, dict):
-                subelem = ElementTree.SubElement(elem, name)
-                self.__dict2xml(subelem, value)
-            elif isinstance(value, list):
-                for v in value:
+            for name, value in dictionary.items():
+                if name == "value":
+                    elem.text = self.__value_tostring(value)
+                elif isinstance(value, dict):
                     subelem = ElementTree.SubElement(elem, name)
-                    if isinstance(v, dict):
-                        self.__dict2xml(subelem, v)
-                    else:
-                        subelem.text = self.__value_tostring(v)
-            else:
-                elem.set(name, self.__value_tostring(value))
+                    self.__dict2xml(subelem, value)
+                elif isinstance(value, list):
+                    for v in value:
+                        subelem = ElementTree.SubElement(elem, name)
+                        if isinstance(v, dict):
+                            self.__dict2xml(subelem, v)
+                        else:
+                            subelem.text = self.__value_tostring(v)
+                else:
+                    elem.set(name, self.__value_tostring(value))
+        except Exception as e:
+            print(e)
 
     def __value_tostring(self, value):
         if value is None:
@@ -131,20 +134,26 @@ class XMLFormatter(BaseFormatter):
         return str(value)
 
     def make_response(self, elem, data):
-        if (elem is None) != (data is None):
-            raise ValueError("Expecting both elem and data or neither of them")
+        try:
+            if (elem is None) != (data is None):
+                raise ValueError("Expecting both elem and data or neither of them")
 
-        response = {
-            "status": "failed" if elem == "error" else "ok",
-            "version": API_VERSION,
-            "xmlns": "http://subsonic.org/restapi",
-        }
-        if elem:
-            response[elem] = data
+            response = {
+                "status": "failed" if elem == "error" else "ok",
+                "version": API_VERSION,
+                "xmlns": "http://subsonic.org/restapi",
+            }
+            if elem:
+                response[elem] = data
 
-        root = ElementTree.Element("subsonic-response")
-        self.__dict2xml(root, response)
+            root = ElementTree.Element("subsonic-response")
+            self.__dict2xml(root, response)
 
-        rv = make_response(ElementTree.tostring(root))
-        rv.mimetype = "text/xml"
+            rv = make_response(ElementTree.tostring(root))
+            rv.mimetype = "text/xml"
+        except Exception as e:
+            print(e)
+            print(elem)
+            print(data)
+            raise(e)
         return rv

@@ -9,6 +9,8 @@
 import hashlib
 import json
 import logging
+import uuid
+
 import mediafile
 import mimetypes
 import os.path
@@ -34,6 +36,8 @@ from .exceptions import (
     ServerError,
     UnsupportedParameter,
 )
+
+from ..ytmusic import YTM
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +68,13 @@ def prepare_transcoding_cmdline(
 
 @api_routing("/stream")
 def stream_media():
-    res = get_entity(Track)
+    try:
+        res = get_entity(Track)
+    except:
+        track_id = request.values['id']
+        ytm = YTM()
+        ytm.add_song(track_id)
+        res = get_entity(Track)
 
     if "timeOffset" in request.values:
         raise UnsupportedParameter("timeOffset")
@@ -227,7 +237,12 @@ def download_media():
     try:
         uid = get_entity_id(Track, id)
     except GenericError:
-        uid = None
+        try:
+            ytm = YTM()
+            ytm.add_song(id)
+            uid = get_entity_id(Track, id)
+        except:
+            uid = None
     try:
         fid = get_entity_id(Folder, id)
     except GenericError:
@@ -346,6 +361,7 @@ def _get_cover_path(eid):
 
     if fid:
         try:
+            ffid = Folder[fid]
             return _cover_from_collection(Folder[fid])
         except Folder.DoesNotExist:
             pass
@@ -368,10 +384,22 @@ def cover_art():
     cache = current_app.cache
 
     eid = request.values["id"]
-    cover_path = _get_cover_path(eid)
+    try:
+        uuid.UUID(eid)
+        raise NotFound("Cover art")
+    except ValueError:
+        pass
+
+    try:
+        cover_path = _get_cover_path(eid)
+    except NotFound:
+        cover_path = None
 
     if not cover_path:
-        raise NotFound("Cover art")
+        ytm = YTM()
+        cover_path = ytm.get_cover_art(eid)
+        if not cover_path:
+            raise NotFound("Cover art")
 
     size = request.values.get("size")
     if size:

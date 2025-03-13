@@ -17,6 +17,7 @@ from threading import Thread, Event
 
 from .covers import find_cover_in_folder, CoverFile
 from .db import Folder, Artist, Album, Track, open_connection, close_connection
+from mutagen.mp4 import MP4
 
 
 logger = logging.getLogger(__name__)
@@ -232,6 +233,7 @@ class Scanner(Thread):
 
             trdict = {"path": path}
 
+        mp4tags = MP4(path_or_direntry)
         artist = (self.__sanitize_str(tag.artist) or "[unknown]")[:255]
         album = (self.__sanitize_str(tag.album) or "[non-album tracks]")[:255]
         albumartist = (self.__sanitize_str(tag.albumartist) or artist)[:255]
@@ -243,12 +245,13 @@ class Scanner(Thread):
         trdict["genre"] = tag.genre
         trdict["duration"] = int(tag.length)
         trdict["has_art"] = bool(tag.images)
+        trdict["id"] = mp4tags.get("m_id")[0]
 
         trdict["bitrate"] = tag.bitrate // 1000
         trdict["last_modification"] = mtime
 
-        tralbum = self.__find_album(albumartist, album)
-        trartist = self.__find_artist(artist)
+        tralbum = self.__find_album(albumartist, album, mp4tags.get("r_id")[0], mp4tags.get("a_id")[0])
+        trartist = self.__find_artist(artist, mp4tags.get("r_id")[0])
 
         if tr is None:
             trdict["root_folder"] = self.__find_root_folder(path)
@@ -363,21 +366,21 @@ class Scanner(Thread):
                 folder.cover_art = cover_name
                 folder.save()
 
-    def __find_album(self, artist, album):
-        ar = self.__find_artist(artist)
+    def __find_album(self, artist, album, artist_id="", album_id=""):
+        ar = self.__find_artist(artist, artist_id=artist_id)
         al = ar.albums.where(Album.name == album).first()
         if al:
             return al
 
         self.__stats.added.albums += 1
-        return Album.create(name=album, artist=ar)
+        return Album.create(name=album, artist=ar, id=album_id)
 
-    def __find_artist(self, artist):
+    def __find_artist(self, artist, artist_id=""):
         try:
             return Artist.get(name=artist)
         except Artist.DoesNotExist:
             self.__stats.added.artists += 1
-            return Artist.create(name=artist)
+            return Artist.create(name=artist, id=artist_id)
 
     def __find_root_folder(self, path):
         path = os.path.dirname(path)
